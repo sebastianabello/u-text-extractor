@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Udemy Transcript Extractor",
+  "version": "5.0.0",
+  "description": "Extract transcripts from Udemy courses, one lecture or the whole course, with multiple export formats",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "clipboardWrite",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://*.udemy.com/*"
+  ],
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "Udemy Transcript Extractor"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.udemy.com/*"],
+      "js": ["content-script.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
