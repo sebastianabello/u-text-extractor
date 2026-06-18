@@ -198,37 +198,14 @@ export const TranscriptExtractorPopup = () => {
       return;
     }
 
-    const openKeys = new Set(open.map((i) => i.key));
     setBulkTotal(open.length);
     setResults([]);
     setBulkCurrent(0);
 
-    // Phase A: move to the first item of the open sections, so we extract the whole
-    // section even if we started in the middle. Prefer a direct click on the first
-    // item; fall back to walking back with the "Previous" button.
-    let idx = open.findIndex((i) => i.isCurrent);
-    if (idx < 0) idx = 0;
-    if (idx > 0 && !cancelRef.current) {
-      setBulkNow(open[0].title);
-      const jumped = await Ext.goToItem(open[0].key);
-      if (jumped.success && jumped.data) {
-        idx = 0;
-      } else {
-        while (idx > 0 && !cancelRef.current) {
-          const prev = await Ext.goToPrev();
-          if (!prev.success || !prev.data?.changed) break;
-          const m = await Ext.getLectureMeta();
-          const k = m.success ? m.data?.currentKey || '' : '';
-          const found = k ? open.findIndex((i) => i.key === k) : -1;
-          idx = found >= 0 ? found : idx - 1;
-          if (found === 0) break;
-        }
-      }
-    }
-
-    // Phase B: extract forward through the open items.
+    // Extract forward through all open items starting from the current position.
     const collected: BulkResult[] = [];
     const seen = new Set<string>();
+    let idx = 0;
 
     for (let guard = 0; guard < 1000 && !cancelRef.current; guard++) {
       const metaRes = await Ext.getLectureMeta();
@@ -433,14 +410,14 @@ export const TranscriptExtractorPopup = () => {
               </div>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
                 {openVideoCount > 0
-                  ? `${openVideoCount} ${openVideoCount === 1 ? 'video' : 'videos'} en las secciones que tienes expandidas.`
-                  : 'Expande en la barra lateral de Udemy las secciones que quieras extraer.'}
+                  ? `${openVideoCount} ${openVideoCount === 1 ? 'video' : 'videos'} en las secciones expandidas. Ve al primer video antes de extraer.`
+                  : 'Expande las secciones que quieras extraer y sitúate en su primer video.'}
               </p>
               <button onClick={() => runOpenSections()} disabled={busy} className={ghostBtn + ' w-full'}>
                 <Layers className="w-4 h-4" />
                 Extraer {openVideoCount > 0 ? `(${openVideoCount})` : 'secciones abiertas'}
               </button>
-              <p className="text-[11px] text-neutral-400 mt-2 text-center">Mantén este panel abierto durante el proceso.</p>
+              <p className="text-[11px] text-neutral-400 mt-2 text-center">Empieza desde el primer video de la sección · Mantén este panel abierto.</p>
             </div>
           </>
         )}
