@@ -1,4 +1,4 @@
-# Udemy Transcript Extractor
+# U Transcript Extractor
 
 A Chrome extension (Manifest V3) that extracts transcripts from Udemy course
 lectures — one lecture at a time, or the entire course in one run — and exports
