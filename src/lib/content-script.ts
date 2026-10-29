@@ -2,10 +2,14 @@
 // Runs in the page context and exposes DOM operations to the popup via messages.
 
 import { UdemyExtractor } from './udemy-extractor';
+import { SkillsExtractor } from './skills-extractor';
 
 declare const chrome: any;
 
 export type ContentMessageType =
+  | 'SKILLS_LIST_PATH'
+  | 'SKILLS_GET_COURSE'
+  | 'SKILLS_EXTRACT_ACTIVITY'
   | 'CHECK_AVAILABILITY'
   | 'GET_VIDEO_INFO'
   | 'EXTRACT_COURSE_STRUCTURE'
@@ -60,7 +64,25 @@ class ContentScript {
 
   private async handleMessage(message: ContentScriptMessage): Promise<any> {
     switch (message.type) {
+      case 'SKILLS_LIST_PATH':
+        return SkillsExtractor.listPath(message.data?.pathId);
+
+      case 'SKILLS_GET_COURSE':
+        return SkillsExtractor.getCourse(message.data?.coursePath);
+
+      case 'SKILLS_EXTRACT_ACTIVITY':
+        return SkillsExtractor.extractActivity(message.data?.card);
+
       case 'CHECK_AVAILABILITY':
+        if (SkillsExtractor.isSkillsHost()) {
+          const skills = SkillsExtractor.getContext();
+          return {
+            platform: 'skills',
+            isCoursePage: skills.kind !== 'other',
+            hasTranscript: skills.kind !== 'other',
+            skills,
+          };
+        }
         return {
           platform: 'udemy',
           isCoursePage: UdemyExtractor.isUdemyCoursePage(),

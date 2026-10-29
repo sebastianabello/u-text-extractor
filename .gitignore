@@ -84,3 +84,13 @@ jspm_packages/
 .tern-port
 
 .claude/
+
+# AI tooling state (oh-my-claudecode, graphify)
+.omc/
+.omx/
+graphify-out/
+
+# Packaged extension builds
+*.zip
+*.crx
+*.pem

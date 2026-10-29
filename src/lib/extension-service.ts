@@ -1,5 +1,6 @@
 // Extension Service for communicating with content script
 import { UdemyCourse, TranscriptResult } from './udemy-extractor';
+import type { SkillsActivityResult, SkillsCard, SkillsContext, SkillsCourse } from './skills-extractor';
 
 declare const chrome: any;
 
@@ -69,8 +70,24 @@ export class ExtensionService {
     platform: string;
     hasTranscript: boolean;
     isCoursePage: boolean;
+    skills?: SkillsContext;
   }>> {
     return this.sendMessage({ type: 'CHECK_AVAILABILITY' });
+  }
+
+  /** Google Skills: courses and labs listed by a learning path. */
+  static async skillsListPath(pathId: string): Promise<ExtensionServiceResponse<SkillsCard[]>> {
+    return this.sendMessage({ type: 'SKILLS_LIST_PATH', data: { pathId } });
+  }
+
+  /** Google Skills: title and extractable activities of a course. */
+  static async skillsGetCourse(coursePath: string): Promise<ExtensionServiceResponse<SkillsCourse>> {
+    return this.sendMessage({ type: 'SKILLS_GET_COURSE', data: { coursePath } });
+  }
+
+  /** Google Skills: transcript or reading of one activity. */
+  static async skillsExtractActivity(card: SkillsCard): Promise<ExtensionServiceResponse<SkillsActivityResult>> {
+    return this.sendMessage({ type: 'SKILLS_EXTRACT_ACTIVITY', data: { card } });
   }
 
   /**

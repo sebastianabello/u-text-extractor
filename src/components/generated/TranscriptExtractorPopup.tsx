@@ -6,6 +6,8 @@ import {
   RotateCcw, AlertCircle, X, Layers, ChevronLeft, Play, Info,
 } from 'lucide-react';
 import JSZip from 'jszip';
+import { SkillsPanel } from './SkillsPanel';
+import type { SkillsContext } from '../../lib/skills-extractor';
 
 const getExt = async () => (await import('../../lib/extension-service')).ExtensionService;
 
@@ -48,6 +50,7 @@ export const TranscriptExtractorPopup = () => {
   const [format, setFormat] = useState<ExportFormat>('txt');
   const [includeTs, setIncludeTs] = useState(true);
 
+  const [skillsCtx, setSkillsCtx] = useState<SkillsContext | null>(null);
   const [onCourse, setOnCourse] = useState<boolean | null>(null);
   const [available, setAvailable] = useState(false);
   const [currentTitle, setCurrentTitle] = useState('');
@@ -98,6 +101,11 @@ export const TranscriptExtractorPopup = () => {
       const avail = await Ext.checkAvailability();
       if (!avail.success || !avail.data) {
         setOnCourse(false);
+        return;
+      }
+      if (avail.data.platform === 'skills' && avail.data.skills) {
+        setSkillsCtx(avail.data.skills);
+        setOnCourse(false); // hides the Udemy views; SkillsPanel takes over
         return;
       }
       setOnCourse(avail.data.isCoursePage);
@@ -377,8 +385,11 @@ export const TranscriptExtractorPopup = () => {
 
       {/* Body */}
       <main className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Google Skills */}
+        {skillsCtx && <SkillsPanel ctx={skillsCtx} />}
+
         {/* Not on a course */}
-        {onCourse === false && (
+        {onCourse === false && !skillsCtx && (
           <div className={`${card} p-5 text-center`}>
             <Info className="w-5 h-5 mx-auto mb-2 text-neutral-400" />
             <p className="text-sm font-medium">Abre una lección de Udemy</p>
@@ -529,7 +540,7 @@ export const TranscriptExtractorPopup = () => {
       <footer className="flex items-center justify-center gap-3 px-4 h-9 border-t border-neutral-200 dark:border-neutral-800 text-[11px] text-neutral-400 flex-shrink-0">
         <span>Local-first</span>
         <span>·</span>
-        <span>Solo Udemy</span>
+        <span>{skillsCtx ? 'Google Skills' : 'Udemy'}</span>
       </footer>
     </div>
   );
