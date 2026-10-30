@@ -45,7 +45,9 @@ export interface SkillsActivityResult {
 // Card types that carry no extractable content and are not even listed.
 const IGNORED_TYPES = new Set(['credential', 'survey']);
 
-const RISE_URL = /^(.*\/)index\.html(?:\?[^#]*)?#\/lessons\/([^/?#]+)/;
+const COURSE_ROOT = /^(?:\/paths\/\d+)?\/course_templates\/\d+/;
+
+const RISE_URL =/^(.*\/)index\.html(?:\?[^#]*)?#\/lessons\/([^/?#]+)/;
 
 // Rise block fields, by role.
 const HEAD_KEYS = new Set(['heading', 'title']);
@@ -291,8 +293,25 @@ export class SkillsExtractor {
     return cards;
   }
 
+  /**
+   * A path links a course it has already started by its resume activity
+   * (/paths/<id>/course_sessions/<id>/<kind>/<id>), which lists no cards. That URL
+   * redirects to /paths/<id>/course_templates/<id>/<kind>/<id>; the template root does.
+   */
+  private static async resolveCoursePath(path: string): Promise<string> {
+    const direct = path.match(COURSE_ROOT);
+    if (direct) return direct[0];
+
+    const res = await fetch(new URL(path, window.location.origin).toString(), { credentials: 'same-origin' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const root = new URL(res.url).pathname.match(COURSE_ROOT);
+    if (!root) throw new Error(`No se pudo ubicar la página del curso desde ${path}`);
+    return root[0];
+  }
+
   /** Extractable activities of a course, in order. Credential/survey cards are dropped. */
-  static async getCourse(coursePath: string): Promise<SkillsCourse> {
+  static async getCourse(path: string): Promise<SkillsCourse> {
+    const coursePath = await this.resolveCoursePath(path);
     const doc = await this.fetchDoc(coursePath);
     const activities = this.readCards(doc).filter((c) => !IGNORED_TYPES.has(c.type));
     if (activities.length === 0) {
@@ -374,7 +393,13 @@ export class SkillsExtractor {
     const fileUrl = src || doc.querySelector('iframe[src*="storage.googleapis.com"]')?.getAttribute('src') || '';
     if (!fileUrl) return { status: 'skipped', reason: 'La lectura no tiene contenido embebido' };
 
-    const res = await fetch(fileUrl);
+    let res: Response;
+    try {
+      res = await fetch(fileUrl);
+    } catch {
+      // Signed Cloud Storage handouts (usually PDFs) send no CORS headers.
+      return { status: 'skipped', reason: 'Archivo adjunto no descargable desde la página (sin CORS)' };
+    }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const type = (res.headers.get('content-type') || '').split(';')[0].trim();
     if (!/html|text\/plain/.test(type)) {

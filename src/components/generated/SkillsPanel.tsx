@@ -116,13 +116,15 @@ export const SkillsPanel = ({ ctx }: { ctx: SkillsContext }) => {
     for (let ci = 0; ci < courses.length && !cancelRef.current; ci++) {
       const course = await Ext.skillsGetCourse(courses[ci].path);
       if (!course.success || !course.data) {
+        // Retired ([Deprecated]) courses stay listed in the path but answer 403.
+        const forbidden = course.error === 'HTTP 403';
         collected.push({
           courseIndex: ci + 1,
           courseTitle: courses[ci].title,
           index: 0,
           card: { type: 'course', path: courses[ci].path, title: courses[ci].title, duration: '' },
-          status: 'failed',
-          reason: course.error || 'No se pudo leer el curso',
+          status: forbidden ? 'skipped' : 'failed',
+          reason: forbidden ? 'Curso sin acceso (HTTP 403), probablemente retirado' : course.error || 'No se pudo leer el curso',
         });
         publish();
         continue;
